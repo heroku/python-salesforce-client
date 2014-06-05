@@ -19,6 +19,7 @@ from .exceptions import (
 
 logger = logging.getLogger(__name__)
 
+
 @wrapt.decorator
 def auth_required(wrapped, instance, args, kwargs):
     if instance.access_token is None:
@@ -42,7 +43,7 @@ class SalesforceRestClientBase(object):
         raise NotImplementedError('Subclasses must specify a version.')
 
     def __init__(self, domain, access_token=None, user_id=None,
-            response_format=RESPONSE_FORMAT_JSON):
+                 response_format=RESPONSE_FORMAT_JSON):
         '''
         domain: The domain name of the organization's Salesforce instance (e.g.
                 "na1.salesforce.com")
@@ -61,7 +62,8 @@ class SalesforceRestClientBase(object):
 
         self.base_headers = {'Accept': accept}
         if access_token:
-            self.base_headers['Authorization'] = 'Bearer {0}'.format(access_token)
+            self.base_headers[
+                'Authorization'] = 'Bearer {0}'.format(access_token)
 
     def _url(self, path, params=None, versioned=True):
         path_parts = ['services/data']
@@ -83,7 +85,8 @@ class SalesforceRestClientBase(object):
             else:
                 content = None
 
-            expected_status_codes = METHOD_STATUS_CODES[response.request.method]
+            expected_status_codes = METHOD_STATUS_CODES[
+                response.request.method]
             if response.status_code in expected_status_codes:
                 return content
             elif 400 <= response.status_code < 500:
@@ -98,7 +101,8 @@ class SalesforceRestClientBase(object):
             # TODO: create ElementTree that supports unicode!
             content = ElementTree.fromstring(response.text.encode('utf-8'))
 
-            expected_status_codes = METHOD_STATUS_CODES[response.request.method]
+            expected_status_codes = METHOD_STATUS_CODES[
+                response.request.method]
             if response.status_code in expected_status_codes:
                 return content
             elif 400 <= response.status_code < 500:
@@ -118,11 +122,11 @@ class SalesforceRestClientBase(object):
         full_headers.update(self.base_headers)
         logger.debug(url)
         response = getattr(self.session, method)(url, data=body,
-                           headers=full_headers)
+                                                 headers=full_headers)
         return self._extract_response(response)
 
     def call(self, path, method='get', params=None, body=None, headers=None,
-            versioned=True):
+             versioned=True):
         url = self._url(path, params=params, versioned=versioned)
         return self._call(url, method=method, body=body, headers=headers)
 
@@ -151,7 +155,8 @@ class SalesforceRestClientBase(object):
                 errors.append('Cannot update this field')
 
         if value is not None and field.get('restrictedPicklist'):
-            values = [i['value'] for i in field['picklistValues'] if i['active']]
+            values = [i['value']
+                      for i in field['picklistValues'] if i['active']]
             if value not in values:
                 errors.append('Bad value for restricted picklist field')
 

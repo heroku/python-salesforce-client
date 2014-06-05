@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class SalesforceRestClient(SalesforceRestClientBase):
+
     """
     https://www.salesforce.com/us/developer/docs/api_rest/Content/resources_list.htm
     """
@@ -140,7 +141,7 @@ class SalesforceRestClient(SalesforceRestClientBase):
 
     @auth_required
     def get_external(self, object_name, external_id_field, external_id,
-            fields=None):
+                     fields=None):
         """
         Retrieves a record based on the value of a specified external ID field.
         """
@@ -160,7 +161,7 @@ class SalesforceRestClient(SalesforceRestClientBase):
 
     @auth_required
     def upsert_external(self, object_name, external_id_field, external_id,
-            data):
+                        data):
         """
         Creates new records or updates existing records (upserts records) based
         on the value of a specified external ID field.
@@ -224,7 +225,7 @@ class SalesforceRestClient(SalesforceRestClientBase):
 
     @auth_required
     def quick_action_default_values(self, object_name, action_name,
-            object_id=None):
+                                    object_id=None):
         "Returns an action's default values, including default field values."
         path = 'sobjects/{0}/quickActions/{1}/defaultValues'.format(object_name,
                                                                     action_name)

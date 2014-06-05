@@ -25,10 +25,11 @@ from suds.transport import Transport, TransportError, Reply
 
 
 class FileAdapter(BaseAdapter):
+
     def send(self, request, **kwargs):
         response = Response()
         response.headers = {}
-        response.encoding = 'utf-8' # FIXME: this is a complete guess
+        response.encoding = 'utf-8'  # FIXME: this is a complete guess
         response.url = request.url
         response.request = request
         response.connection = self
@@ -47,6 +48,7 @@ class FileAdapter(BaseAdapter):
 
 
 class RequestsHttpTransport(Transport):
+
     def __init__(self, session=None, **kwargs):
         Transport.__init__(self)
         Unskin(self.options).update(kwargs)
@@ -60,7 +62,7 @@ class RequestsHttpTransport(Transport):
         if self.options.username and self.options.password:
             auth = HTTPBasicAuth(self.options.username, self.options.password)
         else:
-            auth=None
+            auth = None
 
         response = getattr(self.session, method)(request.url,
                                                  auth=auth,
@@ -84,6 +86,7 @@ class RequestsHttpTransport(Transport):
 
 
 class SalesforceSoapClientBase(object):
+
     @property
     def version(self):
         raise NotImplementedError('Subclasses must specify a version.')
@@ -96,6 +99,7 @@ class SalesforceSoapClientBase(object):
         # This plugin is needed in order to keep empty complex objects from
         # getting sent in the soap paylaod.
         class PrunePlugin(MessagePlugin):
+
             def marshalled(self, context):
                 context.envelope[1].prune()
 
@@ -113,7 +117,7 @@ class SalesforceSoapClientBase(object):
         endpoint = 'https://{0}/services/Soap/m/{1}/{2}'.format(
             domain,
             self.version,
-            access_token.split('!', 1)[0], # Salesforce org ID
+            access_token.split('!', 1)[0],  # Salesforce org ID
         )
         self.client.set_options(location=endpoint)
 

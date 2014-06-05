@@ -9,6 +9,7 @@ from ...soap.exceptions import SalesforceSoapException
 
 logger = logging.getLogger(__name__)
 
+
 class SalesforceMetadataClient(SalesforceSoapClientBase):
     version = '30.0'
     wsdl_path = os.path.join(os.path.dirname(__file__), 'metadata.wsdl')
@@ -21,8 +22,8 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
         return name
 
     def custom_object(self, object_name, label, plural_label, name_field,
-            name_field_label, name_field_type='Text',
-            deployment_status='Deployed', sharing_model='ReadWrite'):
+                      name_field_label, name_field_type='Text',
+                      deployment_status='Deployed', sharing_model='ReadWrite'):
         """Generate a salesforce custom object.
         This method populates all of the required fields for custom objects and
         returns a SOAP object which can be passed to CRUD methods.
@@ -42,7 +43,7 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
         return custom_object
 
     def custom_field(self, object_name, field_name, field_label,
-            field_type='Text', length=255, external_id=False):
+                     field_type='Text', length=255, external_id=False):
         field_name = self._ensure_custom_name(field_name)
         name = '.'.join((object_name, field_name))
         custom_field = self.client.factory.create('CustomField')
@@ -56,7 +57,7 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
         return custom_field
 
     def field_permission_set(self, object_name, field_name, permission_set_name,
-            label, editable=True, readable=True):
+                             label, editable=True, readable=True):
         permission_set = self.client.factory.create('PermissionSet')
         field_permission = self.client.factory.create(
             'PermissionSetFieldPermissions')
@@ -67,7 +68,6 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
         permission_set.fullName = permission_set_name
         permission_set.label = label
         return permission_set
-
 
     ############# CRUD Methods ############
 
@@ -101,7 +101,8 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
 
     def rename(self, metadata_type, old_object_name, new_object_name):
         return self._call('renameMetadata', args=[metadata_type,
-            old_object_name, new_object_name])
+                                                  old_object_name,
+                                                  new_object_name])
 
     def list(self, metadata_type):
         query = self.client.factory.create('ListMetadataQuery')

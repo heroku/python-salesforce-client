@@ -20,6 +20,7 @@ from shams import primitives
 from salesforce.rest.exceptions import InvalidCallException
 from ..conftest import domain, access_token, auth_user_id
 
+
 class SalesforceRestMatcher(BaseMatcher):
     name = 'salesforce_rest'
     excluded_query_keys = ('start', 'end')
@@ -47,6 +48,7 @@ with Betamax.configure() as config:
 
 #### Fixtures ####
 
+
 @pytest.yield_fixture(scope='module')
 def metadata_client(request):
     Client = getattr(request.module, "metadata_client_class")
@@ -62,9 +64,10 @@ def metadata_client(request):
         'body',
     ]
     session = client.client.options.transport.session
-    session.headers['Accept-Encoding'] = '' # don't gzip responses
+    session.headers['Accept-Encoding'] = ''  # don't gzip responses
     with Betamax(session).use_cassette(cassette_name, match_requests_on=matchers):
         yield client
+
 
 @pytest.fixture(scope='module')
 def object_name(request, metadata_client):
@@ -84,6 +87,7 @@ def object_name(request, metadata_client):
 
     return object_name
 
+
 @pytest.fixture(scope='module')
 def external_id_field(request, metadata_client, object_name):
     field_name = 'ExternalId__c'
@@ -100,7 +104,7 @@ def external_id_field(request, metadata_client, object_name):
     permission_set_label = '{0} {1} Permission Set'.format(object_name,
                                                            field_name)
     permission_set = metadata_client.field_permission_set(object_name,
-        field_name, permission_set_name, permission_set_label)
+                                                          field_name, permission_set_name, permission_set_label)
     response = metadata_client.create(permission_set)
 
     # Now assign that permission set to the user
@@ -121,7 +125,7 @@ def external_id_field(request, metadata_client, object_name):
         'body',
     ]
     session = client.session
-    session.headers['Accept-Encoding'] = '' # don't gzip responses
+    session.headers['Accept-Encoding'] = ''  # don't gzip responses
     with Betamax(session).use_cassette(cassette_name, match_requests_on=matchers):
         soql = "SELECT Id FROM PermissionSet WHERE Name = '{0}'".format(
             permission_set_name)
@@ -136,6 +140,7 @@ def external_id_field(request, metadata_client, object_name):
     request.addfinalizer(delete_permission_set)
 
     return field_name
+
 
 @pytest.yield_fixture
 def client(request):
@@ -153,9 +158,10 @@ def client(request):
         'body',
     ]
     session = client.session
-    session.headers['Accept-Encoding'] = '' # don't gzip responses
+    session.headers['Accept-Encoding'] = ''  # don't gzip responses
     with Betamax(session).use_cassette(cassette_name, match_requests_on=matchers):
         yield client
+
 
 @pytest.fixture
 def object_id(request, client, object_name, external_id_field):
@@ -176,19 +182,23 @@ def object_id(request, client, object_name, external_id_field):
 
     return object_id
 
+
 @pytest.fixture
 def external_id(client, object_name, object_id, external_id_field):
     return client.get(object_name, object_id)[external_id_field]
+
 
 @pytest.fixture
 def deleted_object_id(client, object_name, object_id):
     client.delete(object_name, object_id)
     return object_id
 
+
 @pytest.fixture
 def updated_object_id(client, object_name, object_id):
     client.update(object_name, object_id, {'Name': 'Updated object name'})
     return object_id
+
 
 @pytest.fixture
 def datetime_range():

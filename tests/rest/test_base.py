@@ -5,6 +5,7 @@ from salesforce.rest.base import SalesforceRestClientBase
 cassette_name = 'rest.base'
 client_class = SalesforceRestClientBase
 
+
 def test_versions(client):
     versions = client.versions()
     assert isinstance(versions, list)

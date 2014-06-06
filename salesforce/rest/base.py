@@ -7,14 +7,16 @@ import urllib
 import urlparse
 from xml.etree import ElementTree
 
+import pytz
 import requests
 import wrapt
-import pytz
+from requests_oauthlib import OAuth2Session
 
 from .exceptions import (
     SalesforceRestException,
     AuthenticationMissingException,
-    InvalidCallException,
+    InvalidSessionException,
+    get_exception,
 )
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 @wrapt.decorator
 def auth_required(wrapped, instance, args, kwargs):
-    if instance.access_token is None:
+    if getattr(instance.session, 'token', None) is None:
         raise AuthenticationMissingException()
     return wrapped(*args, **kwargs)
 
@@ -42,28 +44,41 @@ class SalesforceRestClientBase(object):
     def version(self):
         raise NotImplementedError('Subclasses must specify a version.')
 
-    def __init__(self, domain, access_token=None, user_id=None,
+    def __init__(self, client_id, client_secret, domain, user_id=None,
+                 access_token=None, refresh_token=None, token_updater=None,
                  response_format=RESPONSE_FORMAT_JSON):
         '''
         domain: The domain name of the organization's Salesforce instance (e.g.
                 "na1.salesforce.com")
         '''
-        self.session = requests.session()
         self.domain = domain
-        self.access_token = access_token
         self.user_id = user_id
         self.response_format = response_format
 
-        # construct headers
-        if response_format == SalesforceRestClientBase.RESPONSE_FORMAT_JSON:
-            accept = 'application/json'
-        elif response_format == SalesforceRestClientBase.RESPONSE_FORMAT_XML:
-            accept = 'application/xml'
-
-        self.base_headers = {'Accept': accept}
         if access_token:
-            self.base_headers[
-                'Authorization'] = 'Bearer {0}'.format(access_token)
+            token = {
+                'access_token': access_token,
+                'token_type': 'Bearer',
+            }
+            if refresh_token:
+                token['refresh_token'] = refresh_token
+                auto_refresh_url = 'https://login.salesforce.com/services/oauth2/token'
+                auto_refresh_kwargs = {
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                }
+            else:
+                auto_refresh_url = None
+                auto_refresh_kwargs = None
+            self.session = OAuth2Session(client_id, token=token,
+                                         auto_refresh_url=auto_refresh_url,
+                                         auto_refresh_kwargs=auto_refresh_kwargs,
+                                         token_updater=token_updater)
+        else:
+            session = requests.Session()
+        self.session.headers['Accept'] = 'application/{0}'.format(
+            response_format
+        )
 
     def _url(self, path, params=None, versioned=True):
         path_parts = ['services/data']
@@ -79,51 +94,59 @@ class SalesforceRestClientBase(object):
         return url
 
     def _extract_response(self, response):
+        error_code = error_message = content = None
         if self.response_format == SalesforceRestClientBase.RESPONSE_FORMAT_JSON:
             if response.text:
                 content = response.json()
-            else:
-                content = None
 
-            expected_status_codes = METHOD_STATUS_CODES[
-                response.request.method]
-            if response.status_code in expected_status_codes:
-                return content
-            elif 400 <= response.status_code < 500:
+            if 400 <= response.status_code < 500:
                 error = content[0]
-                raise InvalidCallException(response.status_code,
-                                           error['errorCode'],
-                                           error['message'])
-            else:
-                raise SalesforceRestException(response.status_code,
-                                              response.text)
+                error_code = error['errorCode']
+                error_message = error['message']
         elif self.response_format == SalesforceRestClientBase.RESPONSE_FORMAT_XML:
             # TODO: create ElementTree that supports unicode!
             content = ElementTree.fromstring(response.text.encode('utf-8'))
 
-            expected_status_codes = METHOD_STATUS_CODES[
-                response.request.method]
-            if response.status_code in expected_status_codes:
-                return content
-            elif 400 <= response.status_code < 500:
+            if 400 <= response.status_code < 500:
                 error = content.getchildren()[0]
-                error_code, message = [e.text.decode('utf-8') for e in error]
-                raise InvalidCallException(response.status_code, error_code,
-                                           message)
-            else:
-                raise SalesforceRestException(response.status_code,
-                                              response.text)
+                error_code, error_message = [e.text.decode('utf-8') for e in error]
+
+        if response.status_code in METHOD_STATUS_CODES[response.request.method]:
+            return content
+        elif error_code or error_message:
+            # 4xx response
+            raise get_exception(response.status_code,
+                                error_code,
+                                error_message)
+        else:
+            # 5xx or unexpected response
+            raise SalesforceRestException(response.status_code,
+                                          response.text)
 
     def _format_datetime(self, value):
         return value.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
     def _call(self, url, method='get', body=None, headers=None):
-        full_headers = dict(headers) if headers else {}
-        full_headers.update(self.base_headers)
         logger.debug(url)
         response = getattr(self.session, method)(url, data=body,
-                                                 headers=full_headers)
-        return self._extract_response(response)
+                                                 headers=headers)
+        try:
+            return self._extract_response(response)
+        except InvalidSessionException as e:
+            # Check to see if the access token is expired and can be refreshed
+            if self.session.token.get('refresh_token'):
+                token = self.session.refresh_token(
+                    self.session.auto_refresh_url,
+                )
+                if self.session.token_updater:
+                    self.session.token_updater(token)
+
+                # Try again with the refreshed access token
+                response = getattr(self.session, method)(url, data=body,
+                                                         headers=headers)
+                return self._extract_response(response)
+
+            raise
 
     def call(self, path, method='get', params=None, body=None, headers=None,
              versioned=True):

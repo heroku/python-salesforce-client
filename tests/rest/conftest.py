@@ -18,7 +18,13 @@ from requests.compat import urlparse
 from shams import primitives
 
 from salesforce.rest.exceptions import InvalidCallException
-from ..conftest import domain, access_token, auth_user_id
+from ..conftest import (
+    domain,
+    access_token,
+    auth_user_id,
+    client_id,
+    client_secret,
+)
 
 
 class SalesforceRestMatcher(BaseMatcher):
@@ -112,7 +118,8 @@ def external_id_field(request, metadata_client, object_name):
     # fixture is function-level. So we have to recreate the client instead of
     # using the fixture. :(
     Client = getattr(request.module, "client_class")
-    client = Client(domain, access_token)
+    client = Client(client_id, client_secret, domain, access_token=access_token,
+                    user_id=auth_user_id)
 
     cassette_name = '.'.join((
         request.module.__name__,
@@ -145,7 +152,8 @@ def external_id_field(request, metadata_client, object_name):
 @pytest.yield_fixture
 def client(request):
     Client = getattr(request.module, "client_class")
-    client = Client(domain, access_token)
+    client = Client(client_id, client_secret, domain, access_token=access_token,
+                    user_id=auth_user_id)
 
     cassette_name = '.'.join((
         request.module.__name__,

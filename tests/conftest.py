@@ -4,9 +4,11 @@ import os
 
 import betamax
 
-domain = os.environ['SF_DOMAIN'].encode()
-access_token = os.environ['SF_ACCESS_TOKEN'].encode()
-auth_user_id = os.environ['SF_USER_ID'].encode()
+domain = os.environ.get('SF_DOMAIN', 'domain').encode()
+access_token = os.environ.get('SF_ACCESS_TOKEN', 'access_token').encode()
+auth_user_id = os.environ.get('SF_USER_ID', 'user_id').encode()
+client_id = os.environ.get('SF_CLIENT_ID', 'client_id').encode()
+client_secret = os.environ.get('SF_CLIENT_SECRET', 'client_secret').encode()
 org_id = access_token.split('!', 1)[0]
 
 with betamax.Betamax.configure() as config:

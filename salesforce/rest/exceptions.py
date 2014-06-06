@@ -26,3 +26,20 @@ class InvalidCallException(SalesforceRestException):
     def __init__(self, status_code, error_code, message):
         self.error_code = error_code
         super(InvalidCallException, self).__init__(status_code, message)
+
+
+class InvalidSessionException(InvalidCallException):
+    pass
+
+
+class NotFoundException(InvalidCallException):
+    pass
+
+
+def get_exception(status_code, error_code, error_message):
+    error_code_map = {
+        (401, 'INVALID_SESSION_ID'): InvalidSessionException,
+        (404, 'NOT_FOUND'): NotFoundException,
+    }
+    klass = error_code_map.get((status_code, error_code), InvalidCallException)
+    return klass(status_code, error_code, error_message)

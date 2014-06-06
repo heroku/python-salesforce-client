@@ -58,7 +58,7 @@ with Betamax.configure() as config:
 @pytest.yield_fixture(scope='module')
 def metadata_client(request):
     Client = getattr(request.module, "metadata_client_class")
-    client = Client(domain, access_token)
+    client = Client(client_id, client_secret, domain, access_token)
 
     cassette_name = '.'.join((
         request.module.__name__,

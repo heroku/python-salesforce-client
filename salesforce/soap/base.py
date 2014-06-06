@@ -18,6 +18,7 @@ from requests import Session
 from requests.adapters import BaseAdapter
 from requests.auth import HTTPBasicAuth
 from requests.models import Response
+from suds import WebFault
 from suds.client import Client
 from suds.plugin import MessagePlugin
 from suds.properties import Unskin
@@ -72,9 +73,6 @@ class RequestsHttpTransport(Transport):
                                                  proxies=self.options.proxy,
                                                  stream=True)
 
-        if response.status_code >= 400:
-            raise TransportError(response.content, response.status_code)
-
         return response
 
     def open(self, request):
@@ -95,7 +93,8 @@ class SalesforceSoapClientBase(object):
     def wsdl_path(self):
         raise NotImplementedError('Subclasses must specify a wsdl path.')
 
-    def __init__(self, domain, access_token):
+    def __init__(self, client_id, client_secret, domain, access_token,
+                 refresh_token=None, token_updater=None):
         # This plugin is needed in order to keep empty complex objects from
         # getting sent in the soap paylaod.
         class PrunePlugin(MessagePlugin):
@@ -107,12 +106,7 @@ class SalesforceSoapClientBase(object):
         self.client = Client(wsdl, transport=RequestsHttpTransport(),
                              plugins=[PrunePlugin()])
 
-        session_header = self.client.factory.create('SessionHeader')
-        session_header.sessionId = access_token
-        headers = {
-            'SessionHeader': session_header
-        }
-        self.client.set_options(soapheaders=headers)
+        self._set_session_header(access_token)
 
         endpoint = 'https://{0}/services/Soap/m/{1}/{2}'.format(
             domain,
@@ -120,6 +114,16 @@ class SalesforceSoapClientBase(object):
             access_token.split('!', 1)[0],  # Salesforce org ID
         )
         self.client.set_options(location=endpoint)
+
+        if refresh_token is not None:
+            from ..rest import SalesforceRestClient
+            self.rest_client = SalesforceRestClient(client_id, client_secret,
+                                                    domain,
+                                                    access_token=access_token,
+                                                    refresh_token=refresh_token,
+                                                    token_updater=token_updater)
+        else:
+            self.rest_client = None
 
     @staticmethod
     def login(wsdl_path, username, password, token):
@@ -130,8 +134,29 @@ class SalesforceSoapClientBase(object):
             urlparse.urlparse(response.serverUrl).netloc,
         )
 
+    def _set_session_header(self, access_token):
+        session_header = self.client.factory.create('SessionHeader')
+        session_header.sessionId = access_token
+        headers = {
+            'SessionHeader': session_header
+        }
+        self.client.set_options(soapheaders=headers)
+
     def _call(self, function_name, args=None, kwargs=None):
         args = args or []
         kwargs = kwargs or {}
+        func = getattr(self.client.service, function_name)
         # TODO: parse response, return something actually useful
-        return getattr(self.client.service, function_name)(*args, **kwargs)
+        try:
+            return func(*args, **kwargs)
+        except WebFault as e:
+            # Detect whether the failure is due to an invalid session, and if
+            # possible, try to refresh the access token.
+            if (hasattr(e, 'fault') and
+                    e.fault.faultcode == 'sf:INVALID_SESSION_ID' and
+                    self.rest_client):
+                token = self.rest_client._refresh_token()
+                if token:
+                    self._set_session_header(token['access_token'])
+                    return func(*args, **kwargs)
+            raise

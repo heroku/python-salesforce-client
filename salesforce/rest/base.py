@@ -126,6 +126,15 @@ class SalesforceRestClientBase(object):
     def _format_datetime(self, value):
         return value.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
+    def _refresh_token(self):
+        if self.session.token.get('refresh_token'):
+            token = self.session.refresh_token(
+                self.session.auto_refresh_url,
+            )
+            if self.session.token_updater:
+                self.session.token_updater(token)
+            return token
+
     def _call(self, url, method='get', body=None, headers=None):
         logger.debug(url)
         response = getattr(self.session, method)(url, data=body,
@@ -133,14 +142,7 @@ class SalesforceRestClientBase(object):
         try:
             return self._extract_response(response)
         except InvalidSessionException as e:
-            # Check to see if the access token is expired and can be refreshed
-            if self.session.token.get('refresh_token'):
-                token = self.session.refresh_token(
-                    self.session.auto_refresh_url,
-                )
-                if self.session.token_updater:
-                    self.session.token_updater(token)
-
+            if self._refresh_token():
                 # Try again with the refreshed access token
                 response = getattr(self.session, method)(url, data=body,
                                                          headers=headers)

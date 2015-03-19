@@ -88,7 +88,7 @@ class SalesforceMetadataClient(SalesforceSoapClientBase):
         return self.get_many(metadata_type, [object_name])
 
     def update_many(self, metadata_objects):
-        return self._call('updateMetadata', args=[meatadata_objects])
+        return self._call('updateMetadata', args=[metadata_objects])
 
     def update(self, metadata_object):
         return self.update_many([metadata_object])

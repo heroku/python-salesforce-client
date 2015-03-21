@@ -17,10 +17,10 @@ if sys.argv[-1] == 'publish':
 packages = [
     'salesforce',
     'salesforce.metadata',
-    'salesforce.metadata.v30',
+    'salesforce.metadata.v33',
     'salesforce.rest',
     'salesforce.soap',
-    'salesforce.soap.v29',
+    'salesforce.soap.v33',
 ]
 
 requires = [
@@ -57,6 +57,6 @@ setup(
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4.1',
     ),
 )

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class SalesforceSoapClient(SalesforceSoapClientBase):
-    version = '29.0'
+    version = '33.0'
     wsdl_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                              'partner.wsdl'))
 

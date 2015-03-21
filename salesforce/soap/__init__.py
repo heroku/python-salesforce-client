@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from . import v29 as latest
+from . import v33 as latest
 
 SalesforceSoapClient = latest.SalesforceSoapClient
 

@@ -1,4 +1,6 @@
 anyjson==0.3.3
+betamax==0.4.1
+pytest==2.6.4
 requests==2.3.0
 requests-oauthlib==0.4.0
 pytz==2014.3

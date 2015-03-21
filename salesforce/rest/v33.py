@@ -14,7 +14,7 @@ class SalesforceRestClient(SalesforceRestClientBase):
     """
     https://www.salesforce.com/us/developer/docs/api_rest/Content/resources_list.htm
     """
-    version = '29.0'
+    version = '33.0'
 
     ### Organization attributes ####
 

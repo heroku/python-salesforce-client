@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class SalesforceMetadataClient(SalesforceSoapClientBase):
-    version = '30.0'
+    version = '33.0'
     wsdl_path = os.path.join(os.path.dirname(__file__), 'metadata.wsdl')
 
     ############# Factory Helpers ############

@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import pytest
 
-from salesforce.rest.v29 import SalesforceRestClient
+from salesforce.rest.v33 import SalesforceRestClient
 from salesforce.metadata import SalesforceMetadataClient
 from salesforce.rest.exceptions import InvalidCallException
 
